@@ -2,8 +2,8 @@ import re
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-
-from requests import get
+import requests
+# from requests import get
 from datetime import date
 from bs4 import BeautifulSoup
 from sklearn import metrics
@@ -25,7 +25,6 @@ def normalized_hash(s):
     return "".join(tmp)
 
 
-#%%
 
 _HEADERS = ({'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36'})
 _REDFIN_URL_SELL = "https://www.redfin.com/zipcode/{}/filter/sort=lo-days"
@@ -34,6 +33,8 @@ _REDFIN_URL_SOLD = "https://www.redfin.com/zipcode/{}/filter/sort=lo-days,includ
 
 def extract_house_info(house):
     """Return info for a single house as a dict"""
+    
+    print(house)
     tmp = {}
     stats = house.find_all('div', class_="stats")
     tmp["beds"] = stats[0].text
@@ -54,6 +55,7 @@ def extract_house_info(house):
     link = house.find_all('a', href=True)[0]['href']
     tmp["link"] = 'https://www.redfin.com{}'.format(link)
     tmp["time_loaded"] = date.today()
+    
     return tmp
 
 
@@ -64,9 +66,11 @@ def get_houses(zipcode, mode="sell"):
     else:
         redfin = _REDFIN_URL_SELL.format(zipcode)
         
-    response = get(redfin, headers=_HEADERS)
+    response = requests.get(redfin, headers=_HEADERS)
     html_soup = BeautifulSoup(response.text, 'html.parser')
     house_containers = html_soup.find_all('div', class_="bottomV2")
+    
+    print(html_soup)
     
     df = pd.DataFrame([extract_house_info(h) for h in house_containers])
     
@@ -92,7 +96,7 @@ zipcodes = ["06082", "01028" ,"06078", "06071", "06035",
             "06096", "06006", "06095", "06088", "06074"]
 
 # zipcodes = ["06082"]
-mode = "sold"
+mode = "sell"
 df = pd.concat([get_houses(zc, mode) for zc in zipcodes], ignore_index=True)
 df["HouseID"] = df["street"].apply(normalized_hash) + df["zipcode"]
 df = df.drop_duplicates(subset="HouseID")
@@ -103,6 +107,50 @@ df = df.dropna()
 # only numbers greater than zero
 num_cols = df.select_dtypes(include=np.number).columns
 df = df[~df[num_cols].lt(0).any(axis=1)]
+
+
+#%%
+
+
+
+
+
+
+import boto3
+import numpy as np
+import pandas as pd
+from boto3.dynamodb.conditions import Key
+
+
+def df_to_table(df, table):
+    """Updates a dynamodb table with rows from a DataFrame."""
+    for row in df.to_dict('records'):
+            table.put_item(Item=row)
+
+
+
+filepath = r"D:\Documents\House Hunt\rootkey.csv"
+access_keys = dict([l.strip().split("=") for l in open(filepath, "r").readlines()])
+    
+dynamodb = boto3.resource('dynamodb', aws_access_key_id=access_keys["AWSAccessKeyId"],
+                          aws_secret_access_key=access_keys["AWSSecretKey"], region_name="us-east-2")
+
+table = dynamodb.Table('House')
+
+# only numbers greater than zero
+num_cols = df.select_dtypes(include=np.number).columns
+df[num_cols] = df[num_cols].astype(int)
+
+
+
+df_to_table(df, table)
+
+
+
+
+
+
+
 
 #%%
 
