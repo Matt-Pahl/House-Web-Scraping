@@ -9,6 +9,7 @@ chrome_options.add_argument("--headless")
 driver = webdriver.Chrome(options=chrome_options)
 start_url = "https://duckgo.com"
 start_url = "https://www.redfin.com/zipcode/01028/filter/sort=lo-days"
+start_url = "https://www.zillow.com/homes/01028_rb/"
 driver.get(start_url)
 print(driver.page_source.encode("utf-8"))
 driver.quit()

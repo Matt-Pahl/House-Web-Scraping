@@ -40,9 +40,6 @@ def extract_house_info(house):
     tmp["beds"] = stats[0].text
     tmp["baths"] = stats[1].text
     tmp["sqft"] = stats[2].text
-    
-    # print(stats)
-    
     tmp["address"] = house.find_all('div', class_="homeAddressV2")[0].text
 
     price = house.find_all('span')[0].text.replace(",", "")
@@ -55,7 +52,6 @@ def extract_house_info(house):
     link = house.find_all('a', href=True)[0]['href']
     tmp["link"] = 'https://www.redfin.com{}'.format(link)
     tmp["time_loaded"] = date.today()
-    
     return tmp
 
 
@@ -69,8 +65,6 @@ def get_houses(zipcode, mode="sell"):
     response = requests.get(redfin, headers=_HEADERS)
     html_soup = BeautifulSoup(response.text, 'html.parser')
     house_containers = html_soup.find_all('div', class_="bottomV2")
-    
-    print(html_soup)
     
     df = pd.DataFrame([extract_house_info(h) for h in house_containers])
     
@@ -113,37 +107,6 @@ df = df[~df[num_cols].lt(0).any(axis=1)]
 
 
 
-
-
-
-import boto3
-import numpy as np
-import pandas as pd
-from boto3.dynamodb.conditions import Key
-
-
-def df_to_table(df, table):
-    """Updates a dynamodb table with rows from a DataFrame."""
-    for row in df.to_dict('records'):
-            table.put_item(Item=row)
-
-
-
-filepath = r"D:\Documents\House Hunt\rootkey.csv"
-access_keys = dict([l.strip().split("=") for l in open(filepath, "r").readlines()])
-    
-dynamodb = boto3.resource('dynamodb', aws_access_key_id=access_keys["AWSAccessKeyId"],
-                          aws_secret_access_key=access_keys["AWSSecretKey"], region_name="us-east-2")
-
-table = dynamodb.Table('House')
-
-# only numbers greater than zero
-num_cols = df.select_dtypes(include=np.number).columns
-df[num_cols] = df[num_cols].astype(int)
-
-
-
-df_to_table(df, table)
 
 
 
