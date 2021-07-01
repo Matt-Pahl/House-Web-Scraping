@@ -1,42 +1,19 @@
 import re
-import numpy as np
+import json
 import pandas as pd
-import matplotlib.pyplot as plt
-import requests
-# from requests import get
-from datetime import date
 from bs4 import BeautifulSoup
-import json
-
-
-
-import requests
-
-from selenium.webdriver import Firefox
-from time import sleep
-import requests
-from bs4 import BeautifulSoup
-from collections import OrderedDict
-import re
-import json
-from random import choice, randint
 from selenium.webdriver import Firefox
 from selenium.webdriver.firefox.webdriver import FirefoxProfile
 
+# base Zillow URL
+_ZILLOW_URL = "https://www.zillow.com/homes/{}_rb/"
 
 
 def get_page_selenium(driver, page_url):
+    """Get .html content from a URL using selenium"""
     driver.get(page_url)
     html_text = driver.page_source
     return html_text
-
-
-
-# filepath = r"D:\Documents\git\House-Web-Scraping\zillow_html_test2.html"
-# url_text = open(filepath, "r").read()
-
-_ZILLOW_URL = "https://www.zillow.com/homes/{}_rb/"
-
 
 
 def zillow_to_df(zipcodes):
